@@ -26,9 +26,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/clock"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/klog/v2"
-	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/kubelet/eviction"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/nodeshutdown/systemd"
@@ -103,9 +101,12 @@ func (m *Manager) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAdmitR
 
 // Start starts the node shutdown manager and will start watching the node for shutdown events.
 func (m *Manager) Start() error {
+	klog.Info("Checking shutdown manager feature state")
 	if !m.isFeatureEnabled() {
+		klog.Info("Node shutdown feature is not enabled")
 		return nil
 	}
+	klog.Info("Node shutdown manager starting")
 	stop, err := m.start()
 	if err != nil {
 		return err
@@ -224,7 +225,8 @@ func (m *Manager) aquireInhibitLock() error {
 
 // Returns if the feature is enabled
 func (m *Manager) isFeatureEnabled() bool {
-	return utilfeature.DefaultFeatureGate.Enabled(features.GracefulNodeShutdown) && m.shutdownGracePeriodRequested > 0
+	//return utilfeature.DefaultFeatureGate.Enabled(features.GracefulNodeShutdown) && m.shutdownGracePeriodRequested > 0
+	return true
 }
 
 // ShutdownStatus will return an error if the node is currently shutting down.
