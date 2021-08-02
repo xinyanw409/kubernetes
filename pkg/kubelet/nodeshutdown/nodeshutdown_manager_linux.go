@@ -87,6 +87,7 @@ func NewManager(getPodsFunc eviction.ActivePodsFunc, killPodFunc eviction.KillPo
 
 // Admit rejects all pods if node is shutting
 func (m *Manager) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAdmitResult {
+	klog.Info("Entering admit function")
 	nodeShuttingDown := m.ShutdownStatus() != nil
 
 	if nodeShuttingDown {
@@ -129,6 +130,7 @@ func (m *Manager) Start() error {
 }
 
 func (m *Manager) start() (chan struct{}, error) {
+	klog.Info("Entering start function")
 	systemBus, err := systemDbus()
 	if err != nil {
 		return nil, err
@@ -231,6 +233,7 @@ func (m *Manager) isFeatureEnabled() bool {
 
 // ShutdownStatus will return an error if the node is currently shutting down.
 func (m *Manager) ShutdownStatus() error {
+	klog.Info("Checking shut down status")
 	if !m.isFeatureEnabled() {
 		return nil
 	}
