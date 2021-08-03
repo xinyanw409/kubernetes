@@ -143,6 +143,7 @@ func (m *Manager) start() (chan struct{}, error) {
 	}
 
 	// If the logind's InhibitDelayMaxUSec as configured in (logind.conf) is less than shutdownGracePeriodRequested, attempt to update the value to shutdownGracePeriodRequested.
+	klog.Info("Comparing shutdownGracePeriodRequested and shutdownGracePeriodRequested")
 	if m.shutdownGracePeriodRequested > currentInhibitDelay {
 		err := m.dbusCon.OverrideInhibitDelay(m.shutdownGracePeriodRequested)
 		if err != nil {
@@ -165,11 +166,13 @@ func (m *Manager) start() (chan struct{}, error) {
 		}
 	}
 
+	klog.Info("Aquire Inhibitlock")
 	err = m.aquireInhibitLock()
 	if err != nil {
 		return nil, err
 	}
 
+	klog.Info("Monitor shutdown")
 	events, err := m.dbusCon.MonitorShutdown()
 	if err != nil {
 		releaseErr := m.dbusCon.ReleaseInhibitLock(m.inhibitLock)
@@ -180,11 +183,13 @@ func (m *Manager) start() (chan struct{}, error) {
 	}
 
 	stop := make(chan struct{})
+	klog.Info("Monitor for shutdown events")
 	go func() {
 		// Monitor for shutdown events. This follows the logind Inhibit Delay pattern described on https://www.freedesktop.org/wiki/Software/systemd/inhibit/
 		// 1. When shutdown manager starts, an inhibit lock is taken.
 		// 2. When shutdown(true) event is received, process the shutdown and release the inhibit lock.
 		// 3. When shutdown(false) event is received, this indicates a previous shutdown was cancelled. In this case, acquire the inhibit lock again.
+		klog.Info("Inside go thread")
 		for {
 			select {
 			case isShuttingDown, ok := <-events:
@@ -201,10 +206,12 @@ func (m *Manager) start() (chan struct{}, error) {
 
 				if isShuttingDown {
 					// Update node status and ready condition
+					klog.Info("Node shutdown. Update node status")
 					go m.syncNodeStatus()
 
 					m.processShutdownEvent()
 				} else {
+					klog.Info("Not shutting down")
 					m.aquireInhibitLock()
 				}
 			}
