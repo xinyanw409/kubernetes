@@ -221,6 +221,7 @@ func (m *Manager) start() (chan struct{}, error) {
 }
 
 func (m *Manager) aquireInhibitLock() error {
+	klog.Info("Aquiring Inhibit lock")
 	lock, err := m.dbusCon.InhibitShutdown()
 	if err != nil {
 		return err
