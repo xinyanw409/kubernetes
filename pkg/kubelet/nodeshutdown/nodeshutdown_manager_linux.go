@@ -143,7 +143,8 @@ func (m *Manager) start() (chan struct{}, error) {
 	}
 
 	// If the logind's InhibitDelayMaxUSec as configured in (logind.conf) is less than shutdownGracePeriodRequested, attempt to update the value to shutdownGracePeriodRequested.
-	klog.Info("Comparing shutdownGracePeriodRequested and shutdownGracePeriodRequested")
+	klog.Infof("Comparing shutdownGracePeriodRequested and shutdownGracePeriodRequested %v : %v", m.shutdownGracePeriodRequested, currentInhibitDelay)
+	klog.Infof("shutdownGracePeriodCriticalPods: %v", m.shutdownGracePeriodCriticalPods)
 	if m.shutdownGracePeriodRequested > currentInhibitDelay {
 		err := m.dbusCon.OverrideInhibitDelay(m.shutdownGracePeriodRequested)
 		if err != nil {
@@ -185,11 +186,11 @@ func (m *Manager) start() (chan struct{}, error) {
 	stop := make(chan struct{})
 	klog.Info("Monitor for shutdown events")
 	go func() {
+		klog.Info("Go thread for monitor shutdown events")
 		// Monitor for shutdown events. This follows the logind Inhibit Delay pattern described on https://www.freedesktop.org/wiki/Software/systemd/inhibit/
 		// 1. When shutdown manager starts, an inhibit lock is taken.
 		// 2. When shutdown(true) event is received, process the shutdown and release the inhibit lock.
 		// 3. When shutdown(false) event is received, this indicates a previous shutdown was cancelled. In this case, acquire the inhibit lock again.
-		klog.Info("Inside go thread")
 		for {
 			select {
 			case isShuttingDown, ok := <-events:
