@@ -283,8 +283,12 @@ func (m *Manager) processShutdownEvent() error {
 
 			klog.V(1).InfoS("Shutdown manager killing pod with gracePeriod", "pod", klog.KObj(pod), "gracePeriod", gracePeriodOverride)
 			if err := m.killPodFunc(pod, false, &gracePeriodOverride, func(status *v1.PodStatus) {
+				//print message / reason
+				klog.Infof("Original message and reason: %v, %v", status.Message, status.Reason)
 				status.Message = nodeShutdownMessage
 				status.Reason = nodeShutdownReason
+				//whole pod
+				klog.Infof("Current pod status is %v", status)
 			}); err != nil {
 				klog.V(1).InfoS("Shutdown manager failed killing pod", "pod", klog.KObj(pod), "err", err)
 			} else {
