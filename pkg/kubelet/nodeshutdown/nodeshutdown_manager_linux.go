@@ -288,7 +288,7 @@ func (m *Manager) processShutdownEvent() error {
 				status.Message = nodeShutdownMessage
 				status.Reason = nodeShutdownReason
 				//whole pod
-				klog.Infof("Current pod status is %v", status)
+				klog.Infof("Current whole pod status is %v \n", pod)
 			}); err != nil {
 				klog.V(1).InfoS("Shutdown manager failed killing pod", "pod", klog.KObj(pod), "err", err)
 			} else {

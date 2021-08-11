@@ -537,9 +537,9 @@ func (kl *Kubelet) tryUpdateNodeStatus(tryNumber int) error {
 
 	// Patch the current status on the API server
 	// print out original / updated
-	klog.Infof("The original node is %v", originalNode)
+	klog.Infof("The original node is %v \n", originalNode)
 	updatedNode, _, err := nodeutil.PatchNodeStatus(kl.heartbeatClient.CoreV1(), types.NodeName(kl.nodeName), originalNode, node)
-	klog.Infof("The updated node is %v", updatedNode)
+	klog.Infof("The updated node is %v \n", updatedNode)
 	if err != nil {
 		return err
 	}
