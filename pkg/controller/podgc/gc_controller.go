@@ -35,6 +35,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/component-base/metrics/prometheus/ratelimiter"
+	nodeshutdown "github.com/kubernetes/kubernetes/pkg/kubelet/nodeshutdown"
 
 	"k8s.io/klog/v2"
 )
@@ -128,9 +129,11 @@ func isPodTerminated(pod *v1.Pod) bool {
 // Test Shutdown 
 func isPodTerminating(pod *v1.Pod) bool {
 	if phase := pod.Status.Phase; phase != v1.PodPending && phase != v1.PodRunning && phase != v1.PodUnknown {
+		klog.Infof("Test Shutdown: pod status phase is not pending/running/unknown, returning true")
 		return true
 	}
-	if pod.ObjectMeta.DeletionTimestamp != nil {
+	klog.Infof("Test shutdown: pod status reason is %v\n", pod.Status.Reason)
+	if pod.ObjectMeta.DeletionTimestamp != nil && pod.Status.Reason == "Shutdown" {
 		klog.Infof("garbage collecting pod %s that is terminating. Phase [%v]", pod.Name, pod.Status.Phase)
 		return true
 	}
