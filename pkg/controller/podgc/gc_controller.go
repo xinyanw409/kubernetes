@@ -137,6 +137,7 @@ func isPodTerminating(pod *v1.Pod) bool {
 		return true
 	}
 	reason := pod.Status.Reason
+	klog.Infof("Test shutdown:  isPodTerminating : pod %s delete time is %v\n", pod.Name, pod.ObjectMeta.DeletionTimestamp)
 	if pod.ObjectMeta.DeletionTimestamp != nil && reason == "Terminated" {
 		klog.Infof("garbage collecting pod %s that is terminating. Phase [%v], Reason [%v]", pod.Name, pod.Status.Phase, pod.Status.Reason)
 		return true
@@ -158,6 +159,7 @@ func (gcc *PodGCController) gcTerminating(pods []*v1.Pod) {
 	//deleteCount := terminatedPodCount - gcc.terminatedPodThreshold
 	deleteCount := terminatedPodCount
 	if deleteCount <= 0 {
+		klog.Infof("Delete count is %v\n", deleteCount)
 		return
 	}
 
