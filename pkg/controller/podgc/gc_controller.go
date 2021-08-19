@@ -130,8 +130,8 @@ func isPodTerminated(pod *v1.Pod) bool {
 
 // Test Shutdown
 func isPodTerminating(pod *v1.Pod) bool {
-	klog.Infof("Test shutdown: isPodTerminating : pod status phase is %v\n", pod.Status.Phase)
-	klog.Infof("Test shutdown: isPodTerminating : pod status reason is %v\n", pod.Status.Reason)
+	klog.Infof("Test shutdown: isPodTerminating : pod %s status phase is %v\n", pod.Name, pod.Status.Phase)
+	klog.Infof("Test shutdown: isPodTerminating : pod %s status reason is %v\n", pod.Name, pod.Status.Reason)
 	if phase := pod.Status.Phase; phase != v1.PodPending && phase != v1.PodRunning && phase != v1.PodUnknown {
 		klog.Infof("Test Shutdown: pod status phase is not pending/running/unknown, returning true")
 		return true
