@@ -35,8 +35,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/component-base/metrics/prometheus/ratelimiter"
-	nodeshutdown "github.com/kubernetes/kubernetes/pkg/kubelet/nodeshutdown"
-
 	"k8s.io/klog/v2"
 )
 
