@@ -26,10 +26,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/clock"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
-	"k8s.io/kubernetes/pkg/features"
 	kubeletevents "k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/eviction"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
@@ -111,8 +109,10 @@ func (m *Manager) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAdmitR
 // Start starts the node shutdown manager and will start watching the node for shutdown events.
 func (m *Manager) Start() error {
 	if !m.isFeatureEnabled() {
+		klog.Info("Node shutdown feature is not enabled")
 		return nil
 	}
+	klog.Info("Node shutdown manager starting")
 	stop, err := m.start()
 	if err != nil {
 		return err
@@ -217,11 +217,13 @@ func (m *Manager) start() (chan struct{}, error) {
 				m.nodeShuttingDownMutex.Unlock()
 
 				if isShuttingDown {
+					klog.Info("Node shutdown. Update node status")
 					// Update node status and ready condition
 					go m.syncNodeStatus()
 
 					m.processShutdownEvent()
 				} else {
+					klog.Info("Not shutting down")
 					m.aquireInhibitLock()
 				}
 			}
