@@ -26,10 +26,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/clock"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
-	"k8s.io/kubernetes/pkg/features"
 	kubeletevents "k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/eviction"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
@@ -96,6 +94,7 @@ func NewManager(recorder record.EventRecorder, nodeRef *v1.ObjectReference, getP
 
 // Admit rejects all pods if node is shutting
 func (m *Manager) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAdmitResult {
+	klog.Info("Entering admit function")
 	nodeShuttingDown := m.ShutdownStatus() != nil
 
 	if nodeShuttingDown {
@@ -110,9 +109,12 @@ func (m *Manager) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAdmitR
 
 // Start starts the node shutdown manager and will start watching the node for shutdown events.
 func (m *Manager) Start() error {
+	klog.Info("Checking shutdown manager feature state")
 	if !m.isFeatureEnabled() {
+		klog.Info("Node shutdown feature is not enabled")
 		return nil
 	}
+	klog.Info("Node shutdown manager starting")
 	stop, err := m.start()
 	if err != nil {
 		return err
@@ -135,6 +137,7 @@ func (m *Manager) Start() error {
 }
 
 func (m *Manager) start() (chan struct{}, error) {
+	klog.Info("Entering start function")
 	systemBus, err := systemDbus()
 	if err != nil {
 		return nil, err
@@ -146,6 +149,8 @@ func (m *Manager) start() (chan struct{}, error) {
 		return nil, err
 	}
 
+	klog.Infof("Comparing shutdownGracePeriodRequested and shutdownGracePeriodRequested %v : %v", m.shutdownGracePeriodRequested, currentInhibitDelay)
+	klog.Infof("shutdownGracePeriodCriticalPods: %v", m.shutdownGracePeriodCriticalPods)
 	// If the logind's InhibitDelayMaxUSec as configured in (logind.conf) is less than shutdownGracePeriodRequested, attempt to update the value to shutdownGracePeriodRequested.
 	if m.shutdownGracePeriodRequested > currentInhibitDelay {
 		err := m.dbusCon.OverrideInhibitDelay(m.shutdownGracePeriodRequested)
@@ -169,6 +174,7 @@ func (m *Manager) start() (chan struct{}, error) {
 		}
 	}
 
+	klog.Info("Aquire Inhibitlock")
 	err = m.aquireInhibitLock()
 	if err != nil {
 		return nil, err
@@ -185,6 +191,7 @@ func (m *Manager) start() (chan struct{}, error) {
 
 	stop := make(chan struct{})
 	go func() {
+		klog.Info("Go thread for monitor shutdown events")
 		// Monitor for shutdown events. This follows the logind Inhibit Delay pattern described on https://www.freedesktop.org/wiki/Software/systemd/inhibit/
 		// 1. When shutdown manager starts, an inhibit lock is taken.
 		// 2. When shutdown(true) event is received, process the shutdown and release the inhibit lock.
@@ -217,11 +224,13 @@ func (m *Manager) start() (chan struct{}, error) {
 				m.nodeShuttingDownMutex.Unlock()
 
 				if isShuttingDown {
+					klog.Info("Node shutdown. Update node status")
 					// Update node status and ready condition
 					go m.syncNodeStatus()
 
 					m.processShutdownEvent()
 				} else {
+					klog.Info("Not shutting down")
 					m.aquireInhibitLock()
 				}
 			}
@@ -231,6 +240,7 @@ func (m *Manager) start() (chan struct{}, error) {
 }
 
 func (m *Manager) aquireInhibitLock() error {
+	klog.Info("Aquiring Inhibit lock")
 	lock, err := m.dbusCon.InhibitShutdown()
 	if err != nil {
 		return err
@@ -244,11 +254,13 @@ func (m *Manager) aquireInhibitLock() error {
 
 // Returns if the feature is enabled
 func (m *Manager) isFeatureEnabled() bool {
-	return utilfeature.DefaultFeatureGate.Enabled(features.GracefulNodeShutdown) && m.shutdownGracePeriodRequested > 0
+	//return utilfeature.DefaultFeatureGate.Enabled(features.GracefulNodeShutdown) && m.shutdownGracePeriodRequested > 0
+	return true
 }
 
 // ShutdownStatus will return an error if the node is currently shutting down.
 func (m *Manager) ShutdownStatus() error {
+	klog.Info("Checking shut down status")
 	if !m.isFeatureEnabled() {
 		return nil
 	}
@@ -289,8 +301,14 @@ func (m *Manager) processShutdownEvent() error {
 
 			klog.V(1).InfoS("Shutdown manager killing pod with gracePeriod", "pod", klog.KObj(pod), "gracePeriod", gracePeriodOverride)
 			if err := m.killPodFunc(pod, false, &gracePeriodOverride, func(status *v1.PodStatus) {
+				//print message / reason
+				klog.Infof("Original message and reason: %v, %v", status.Message, status.Reason)
 				status.Message = nodeShutdownMessage
 				status.Reason = nodeShutdownReason
+				//whole pod
+				klog.Infof("Current whole pod status is %v \n", pod)
+				klog.Infof("pod status reason: %v \n", pod.Status.Reason)
+				klog.Infof("pdo status message: %v \n", pod.Status.Message)
 			}); err != nil {
 				klog.V(1).InfoS("Shutdown manager failed killing pod", "pod", klog.KObj(pod), "err", err)
 			} else {

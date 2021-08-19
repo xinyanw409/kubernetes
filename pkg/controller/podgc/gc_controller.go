@@ -118,7 +118,13 @@ func (gcc *PodGCController) gc() {
 }
 
 func isPodTerminated(pod *v1.Pod) bool {
+	klog.Infof("Test shutdown: pod status phase is %v\n", pod.Status.Phase)
+	klog.Infof("Test shutdown: pod status reason is %v\n", pod.Status.Reason)
 	if phase := pod.Status.Phase; phase != v1.PodPending && phase != v1.PodRunning && phase != v1.PodUnknown {
+		klog.Info("pod status phase is not pending/running/unknown\n")
+		return true
+	}
+	if reason := pod.Status.Reason; reason == "Terminated" {
 		return true
 	}
 	return false
