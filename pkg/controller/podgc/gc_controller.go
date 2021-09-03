@@ -113,11 +113,15 @@ func (gcc *PodGCController) gc() {
 	if gcc.terminatedPodThreshold > 0 {
 		gcc.gcTerminated(pods)
 	}
+	for _, pod := range pods {
+		klog.Infof("Test shutdown: check pod %v: status phase is %v, reason is %v, message is %v\n", pod.Name, pod.Status.Phase, pod.Status.Reason, pod.Status.Message)
+	}
 	gcc.gcOrphaned(pods, nodes)
 	gcc.gcUnscheduledTerminating(pods)
 }
 
 func isPodTerminated(pod *v1.Pod) bool {
+	klog.Infof("Test shutdown: isPodTerminated: pod %v status phase is %v, reason is %v, message is %v\n", pod.Name, pod.Status.Phase, pod.Status.Reason, pod.Status.Message)
 	if phase := pod.Status.Phase; phase != v1.PodPending && phase != v1.PodRunning && phase != v1.PodUnknown {
 		return true
 	}

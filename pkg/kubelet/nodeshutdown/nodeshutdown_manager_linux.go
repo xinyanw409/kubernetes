@@ -112,6 +112,7 @@ func (m *Manager) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAdmitR
 // Start starts the node shutdown manager and will start watching the node for shutdown events.
 func (m *Manager) Start() error {
 	if !m.isFeatureEnabled() {
+		klog.Info("Feature is not enabled")
 		return nil
 	}
 	stop, err := m.start()
